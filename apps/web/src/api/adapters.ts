@@ -423,6 +423,7 @@ export type ForensicsView =
       summary?: AnyRecord;
       documents: AnyRecord[];
       photos: AnyRecord[];
+      faculty?: AnyRecord[];
     }
   | { kind: 'empty' };
 
@@ -441,12 +442,13 @@ export function normalizeForensics(raw: AnyRecord | undefined): ForensicsView {
       },
     };
   }
-  if (Array.isArray(raw.documents) || Array.isArray(raw.photos)) {
+  if (Array.isArray(raw.documents) || Array.isArray(raw.photos) || Array.isArray(raw.faculty)) {
     return {
       kind: 'documents',
       summary: raw.summary,
       documents: raw.documents ?? [],
       photos: raw.photos ?? [],
+      faculty: raw.faculty ?? [],
     };
   }
   return { kind: 'empty' };

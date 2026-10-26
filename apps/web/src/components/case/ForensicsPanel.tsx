@@ -187,8 +187,13 @@ const SuiteView: React.FC<{ data: ForensicsSuiteData }> = ({ data }) => {
   );
 };
 
-/** Backend shape: GET /applications/:id/forensics → { summary, documents[], photos[] } */
-const DocumentsView: React.FC<{ summary?: Record<string, any>; documents: any[]; photos: any[] }> = ({ summary, documents, photos }) => (
+/** Backend shape: GET /applications/:id/forensics → { summary, documents[], photos[], faculty[] } */
+const DocumentsView: React.FC<{
+  summary?: Record<string, any>;
+  documents: any[];
+  photos: any[];
+  faculty?: any[];
+}> = ({ summary, documents, photos, faculty }) => (
   <div className="space-y-4">
     {summary && (
       <StatStrip
@@ -247,6 +252,45 @@ const DocumentsView: React.FC<{ summary?: Record<string, any>; documents: any[];
         </tbody>
       </table>
     </div>
+
+    {faculty && faculty.length > 0 && (
+      <div className="overflow-x-auto rounded border border-line bg-white">
+        <div className="border-b border-line bg-[#f6f8fa] px-3 py-2">
+          <h3 className="text-[13px] font-semibold text-ink">Faculty Identity & Ghost Duplication Checks</h3>
+          <p className="text-meta text-ink-faint">
+            Identifiers are matched cross-institutionally via salted HMAC-SHA256 hashes without storing or exposing raw Aadhaar/PAN.
+          </p>
+        </div>
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>Name (normalised)</th>
+              <th>Identifier type</th>
+              <th>Also listed by</th>
+              <th>Match confidence</th>
+              <th>Result</th>
+            </tr>
+          </thead>
+          <tbody>
+            {faculty.map((f, i) => (
+              <tr key={f.id ?? i}>
+                <td className="font-medium text-ink">{f.nameNormalized}</td>
+                <td>{f.identifierType}</td>
+                <td>{f.matchInstitutionName ?? <span className="text-ink-faint">No other institution</span>}</td>
+                <td className="tabular-nums">{f.matchConfidence != null ? `${Math.round(f.matchConfidence * 100)}%` : '—'}</td>
+                <td>
+                  {f.isGhostFlagged ? (
+                    <StatusPill domain="verification" value="MISMATCH_DETECTED" />
+                  ) : (
+                    <span className="text-meta text-ink-faint">No collision reported</span>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )}
   </div>
 );
 
@@ -272,7 +316,16 @@ export const ForensicsPanel: React.FC<{ applicationId: string }> = ({ applicatio
         Document signals are indicators for review, not conclusions. Values are shown exactly as returned by the verification
         service.
       </p>
-      {data.kind === 'suite' ? <SuiteView data={data.data} /> : <DocumentsView summary={data.summary} documents={data.documents} photos={data.photos} />}
+      {data.kind === 'suite' ? (
+        <SuiteView data={data.data} />
+      ) : (
+        <DocumentsView
+          summary={data.summary}
+          documents={data.documents}
+          photos={data.photos}
+          faculty={data.faculty}
+        />
+      )}
     </div>
   );
 };
