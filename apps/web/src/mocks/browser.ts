@@ -4,7 +4,7 @@ import { handlers } from './handlers';
 export const worker = setupWorker(...handlers);
 
 export const initMocks = async () => {
-  if (import.meta.env.VITE_USE_MOCKS === 'true' || import.meta.env.DEV) {
+  if (import.meta.env.VITE_USE_MOCKS === 'true') {
     await worker.start({
       onUnhandledRequest: 'bypass',
       serviceWorker: {

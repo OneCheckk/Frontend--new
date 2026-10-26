@@ -12,7 +12,31 @@ export interface User {
   email: string;
   role: UserRole;
   institutionName?: string;
+  institutionId?: string;
 }
+
+export const adaptAuthUser = (rawUser: any): User => {
+  if (!rawUser) throw new Error('No user data received');
+  const id = rawUser.id || rawUser._id || '';
+  const inst = rawUser.institution;
+  const institutionName =
+    typeof inst === 'object' && inst !== null
+      ? inst.name
+      : rawUser.institutionName || undefined;
+  const institutionId =
+    typeof inst === 'object' && inst !== null
+      ? (inst._id || inst.id)
+      : rawUser.institutionId || (typeof inst === 'string' ? inst : undefined);
+
+  return {
+    id: String(id),
+    name: rawUser.name || '',
+    email: rawUser.email || '',
+    role: rawUser.role,
+    institutionName,
+    institutionId: institutionId ? String(institutionId) : undefined,
+  };
+};
 
 interface AuthContextType {
   user: User | null;
@@ -96,6 +120,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return unsubscribe;
   }, [navigate]);
 
+  // Restore and sync session with /auth/me on mount if token is present
+  useEffect(() => {
+    let isMounted = true;
+    const restoreSession = async () => {
+      const storedToken = getStoredToken();
+      if (!storedToken) return;
+
+      try {
+        const res = await apiClient.get('/auth/me');
+        const data = res.data?.data || res.data;
+        const userData = data?.user || data;
+        if (userData && isMounted) {
+          const adapted = adaptAuthUser(userData);
+          setUser(adapted);
+          sessionStorage.setItem(AUTH_USER_KEY, JSON.stringify(adapted));
+        }
+      } catch (err: any) {
+        if (err?.response?.status === 401 && isMounted) {
+          logout();
+        }
+      }
+    };
+
+    restoreSession();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   // Post-sign-in destination (see auth/routeAccess.ts). Covers the backend's
   // OFFICER and INSTITUTION_USER role aliases used by the seeded accounts.
   const routeByRole = (role: UserRole) => {
@@ -113,7 +166,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const res = await apiClient.post('/auth/login', payload);
       const data = res.data?.data || res.data;
       const receivedToken = data.token;
-      const receivedUser = data.user;
+      const receivedUser = adaptAuthUser(data.user || data);
 
       setStoredToken(receivedToken);
       sessionStorage.setItem(AUTH_USER_KEY, JSON.stringify(receivedUser));
@@ -138,8 +191,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     const mockUser = MOCK_DEV_USERS[role] || MOCK_DEV_USERS.INSTITUTION;
+    const seedPasswords: Record<string, string> = {
+      INSTITUTION: 'Institution@123456',
+      SCRUTINY_OFFICER: 'Officer@123456',
+      REGIONAL_DIRECTOR: 'Director@123456',
+      ADMIN: 'Admin@123456',
+      AUDITOR: 'Auditor@123456',
+    };
+    const password = seedPasswords[role] || 'Officer@123456';
+
     try {
-      await login(mockUser.email, undefined, role);
+      await login(mockUser.email, password, role);
     } catch {
       const mockToken = `dev-mock-jwt-token-for-${role.toLowerCase()}`;
       setStoredToken(mockToken);
