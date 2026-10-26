@@ -16,6 +16,7 @@ import {
 import { DemoBanner } from '../../components/status';
 import { humanize } from '../../components/status/statusMaps';
 import { fmtDateTime } from '../../lib/format';
+import { IntegrityAuditControl } from '../../components/audit/IntegrityAuditControl';
 
 export const AuditPage: React.FC = () => {
   const [page, setPage] = useState(1);
@@ -77,6 +78,9 @@ export const AuditPage: React.FC = () => {
           {verifyResult.verifiedAt && <span className="block text-[11.5px] text-ink-faint">Checked {fmtDateTime(verifyResult.verifiedAt)}</span>}
         </Notice>
       )}
+
+      {/* Feature 3: Bureau Director Integrity Audit Control & Breach Alert */}
+      <IntegrityAuditControl className="mb-5" />
 
       <Panel bodyClassName="">
         <form onSubmit={applyFilters}>

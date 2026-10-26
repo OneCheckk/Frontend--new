@@ -1,3 +1,5 @@
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 const mongoose = require('mongoose');
 const crypto = require('crypto');
 const { connectDB, disconnectDB } = require('./config/database');
@@ -702,358 +704,358 @@ async function seedDatabase(uri) {
       // ---------------------------------------------------------
       // 7. Seed Documents for Applications
       // ---------------------------------------------------------
-    const docTemplates = [
-      { docType: 'SELF_DISCLOSURE_FORM', originalName: 'AICTE_Self_Disclosure_Signed.pdf', mimeType: 'application/pdf', size: 1048576 },
-      { docType: 'FIRE_NOC', originalName: 'Fire_Safety_NOC_Certificate.pdf', mimeType: 'application/pdf', size: 524288 },
-      { docType: 'BUILDING_PLAN', originalName: 'Sanctioned_Building_Plan_Architect.pdf', mimeType: 'application/pdf', size: 2097152 },
-      { docType: 'FACULTY_LIST', originalName: 'Faculty_Cadre_List_Roster.pdf', mimeType: 'application/pdf', size: 655360 },
-      { docType: 'TER_PAYMENT_RECEIPT', originalName: 'TER_Processing_Fee_Challan.pdf', mimeType: 'application/pdf', size: 327680 },
-      { docType: 'LAND_TITLE_DEED', originalName: 'Registered_Land_Title_Deed.pdf', mimeType: 'application/pdf', size: 1572864 },
-    ];
+      const docTemplates = [
+        { docType: 'SELF_DISCLOSURE_FORM', originalName: 'AICTE_Self_Disclosure_Signed.pdf', mimeType: 'application/pdf', size: 1048576 },
+        { docType: 'FIRE_NOC', originalName: 'Fire_Safety_NOC_Certificate.pdf', mimeType: 'application/pdf', size: 524288 },
+        { docType: 'BUILDING_PLAN', originalName: 'Sanctioned_Building_Plan_Architect.pdf', mimeType: 'application/pdf', size: 2097152 },
+        { docType: 'FACULTY_LIST', originalName: 'Faculty_Cadre_List_Roster.pdf', mimeType: 'application/pdf', size: 655360 },
+        { docType: 'TER_PAYMENT_RECEIPT', originalName: 'TER_Processing_Fee_Challan.pdf', mimeType: 'application/pdf', size: 327680 },
+        { docType: 'LAND_TITLE_DEED', originalName: 'Registered_Land_Title_Deed.pdf', mimeType: 'application/pdf', size: 1572864 },
+      ];
 
-    const docMap = {};
-    for (const [appNo, app] of Object.entries(appMap)) {
-      if (app.status === 'DRAFT') continue;
-      for (const t of docTemplates) {
-        const key = `${appNo}-${t.docType}`;
-        let doc = await Document.findOne({ storageKey: key });
-        if (!doc) {
-          doc = await Document.create({
-            application: app._id,
-            applicationId: app._id,
-            documentType: t.docType,
-            docType: t.docType,
-            typeConfidence: 0.98,
-            originalName: t.originalName,
-            storageKey: key,
-            storagePath: `/mock-docs/D1.pdf`,
-            fileSize: t.size,
-            sizeBytes: t.size,
-            mimeType: t.mimeType,
-            mime: t.mimeType,
-            pageCount: 4,
-            uploadStatus: 'STORED',
-            verificationStatus: app.status === 'APPROVED' ? 'VERIFIED' : 'PENDING',
-            uploadedBy: adminUser._id,
-            sha256FileHash: crypto.createHash('sha256').update(key).digest('hex'),
-            sha256: crypto.createHash('sha256').update(key).digest('hex'),
+      const docMap = {};
+      for (const [appNo, app] of Object.entries(appMap)) {
+        if (app.status === 'DRAFT') continue;
+        for (const t of docTemplates) {
+          const key = `${appNo}-${t.docType}`;
+          let doc = await Document.findOne({ storageKey: key });
+          if (!doc) {
+            doc = await Document.create({
+              application: app._id,
+              applicationId: app._id,
+              documentType: t.docType,
+              docType: t.docType,
+              typeConfidence: 0.98,
+              originalName: t.originalName,
+              storageKey: key,
+              storagePath: `/mock-docs/D1.pdf`,
+              fileSize: t.size,
+              sizeBytes: t.size,
+              mimeType: t.mimeType,
+              mime: t.mimeType,
+              pageCount: 4,
+              uploadStatus: 'STORED',
+              verificationStatus: app.status === 'APPROVED' ? 'VERIFIED' : 'PENDING',
+              uploadedBy: adminUser._id,
+              sha256FileHash: crypto.createHash('sha256').update(key).digest('hex'),
+              sha256: crypto.createHash('sha256').update(key).digest('hex'),
+            });
+          }
+          docMap[key] = doc;
+        }
+      }
+      logger.info('Created Documents across applications');
+
+      // ---------------------------------------------------------
+      // 8. Seed Claims & Findings
+      // ---------------------------------------------------------
+      const primaryApp = appMap['APP-2026-000101'];
+      if (primaryApp) {
+        // Claims
+        const claimsData = [
+          {
+            claimId: 'CLM-000101-01',
+            applicationId: primaryApp._id,
+            subject: 'institution',
+            predicate: 'lab_area_sqm_total',
+            value: 850,
+            unit: 'sqm',
+            confidence: 0.95,
+            origin: 'DOCUMENT',
+            source: { docId: 'D3', page: 2, bbox: [0.1, 0.2, 0.45, 0.35], snippet: 'Total instructional computer laboratory carpet area: 850.00 sq.m', docType: 'SELF_DISCLOSURE_FORM' },
+            method: 'OCR',
+          },
+          {
+            claimId: 'CLM-000101-02',
+            applicationId: primaryApp._id,
+            subject: 'institution',
+            predicate: 'intake_requested',
+            value: 180,
+            unit: 'seats',
+            confidence: 0.98,
+            origin: 'DOCUMENT',
+            source: { docId: 'D1', page: 1, bbox: [0.15, 0.4, 0.5, 0.48], snippet: 'Proposed UG intake for CSE: 180 seats (Increase from 120)', docType: 'SELF_DISCLOSURE_FORM' },
+            method: 'TEXT_LAYER',
+          },
+          {
+            claimId: 'CLM-000101-03',
+            applicationId: primaryApp._id,
+            subject: 'institution',
+            predicate: 'faculty_count_listed',
+            value: 12,
+            unit: 'faculty',
+            confidence: 0.94,
+            origin: 'DOCUMENT',
+            source: { docId: 'D2', page: 1, bbox: [0.05, 0.1, 0.9, 0.85], snippet: 'Total available approved cadre faculty: 12 members', docType: 'FACULTY_LIST' },
+            method: 'TEXT_LAYER',
+          },
+          {
+            claimId: 'CLM-000101-04',
+            applicationId: primaryApp._id,
+            subject: 'institution',
+            predicate: 'ter_payment_status_claimed',
+            value: 'PAID',
+            confidence: 0.99,
+            origin: 'DOCUMENT',
+            source: { docId: 'D1', page: 3, bbox: [0.1, 0.7, 0.6, 0.78], snippet: 'TER Processing Fee of Rs 2,50,000 paid via NEFT Ref 88392019', docType: 'SELF_DISCLOSURE_FORM' },
+            method: 'TEXT_LAYER',
+          },
+        ];
+
+        for (const c of claimsData) {
+          let clm = await Claim.findOne({ claimId: c.claimId });
+          if (!clm) {
+            await Claim.create(c);
+          }
+        }
+
+        // Findings
+        const findingsData = [
+          {
+            findingId: 'FND-000101-01',
+            applicationId: primaryApp._id,
+            ruleId: 'AREA-CONSIST-001',
+            ruleVersion: '1',
+            rulepackVersion: '2026.1-demo',
+            clauseRef: 'AICTE-APH-CH2-05',
+            placeholder: false,
+            status: 'MISMATCH_DETECTED',
+            severity: 'HIGH',
+            state: 'OPEN',
+            title: 'Laboratory Carpet Area Discrepancy',
+            message: 'Laboratory area is 850 sqm in the self-disclosure form but 720 sqm in the architect-sanctioned building plan (difference 15.3%).',
+            claimIds: ['CLM-000101-01'],
+            proof: {
+              statement: 'Computed variance exceeds configured regulatory threshold of 2.0%.',
+              evidence: [
+                {
+                  label: 'Self-Disclosure Carpet Area',
+                  value: 850,
+                  unit: 'sqm',
+                  confidence: 0.96,
+                  source: { docId: 'D3', page: 2, bbox: [0.1, 0.2, 0.45, 0.35], snippet: 'Total instructional computer laboratory carpet area: 850.00 sq.m', docType: 'SELF_DISCLOSURE_FORM' },
+                },
+                {
+                  label: 'Building Plan Carpet Area',
+                  value: 720,
+                  unit: 'sqm',
+                  confidence: 0.99,
+                  source: { docId: 'D2', page: 4, bbox: [0.3, 0.5, 0.7, 0.65], snippet: 'Total Lab Area Approved = 720.00 SQM', docType: 'BUILDING_PLAN' },
+                },
+              ],
+              computation: { formula: '|form - plan| / plan * 100', inputs: { form: 850, plan: 720 }, result: '15.3%' },
+            },
+          },
+          {
+            findingId: 'FND-000101-02',
+            applicationId: primaryApp._id,
+            ruleId: 'FSR-004',
+            ruleVersion: '1',
+            rulepackVersion: '2026.1-demo',
+            clauseRef: 'AICTE-APH-CH2-07',
+            placeholder: false,
+            status: 'MISMATCH_DETECTED',
+            severity: 'HIGH',
+            state: 'OPEN',
+            title: 'Faculty Student Ratio (FSR) Shortfall for Proposed Intake',
+            message: 'Requested intake 180 seats over 12 listed faculty gives 25:1 student-to-faculty ratio; maximum allowed is 20:1 under AICTE Chapter II.',
+            claimIds: ['CLM-000101-02', 'CLM-000101-03'],
+            proof: {
+              statement: 'Shortfall of at least 3 approved Assistant Professors in the Department of Computer Science.',
+              evidence: [],
+              computation: { formula: 'intake / faculty <= 20', inputs: { intake: 180, faculty: 12 }, result: '25.0' },
+            },
+          },
+          {
+            findingId: 'FND-000101-03',
+            applicationId: primaryApp._id,
+            ruleId: 'TER-STATUS-006',
+            ruleVersion: '1',
+            rulepackVersion: '2026.1-demo',
+            clauseRef: 'AICTE-APH-CH2-09',
+            placeholder: false,
+            status: 'MISMATCH_DETECTED',
+            severity: 'HIGH',
+            state: 'OPEN',
+            title: 'TER Processing Fee Unconfirmed in Central AICTE Ledger',
+            message: 'Self-disclosure claims fee PAID, but National Portal Bank Reconciliation record reflects PENDING status.',
+            claimIds: ['CLM-000101-04'],
+            proof: {
+              statement: 'Bank transaction reference UTR-88392019 awaiting final clearance from SBI e-Pay gateway.',
+              evidence: [],
+            },
+          },
+        ];
+
+        for (const f of findingsData) {
+          let fnd = await Finding.findOne({ findingId: f.findingId });
+          if (!fnd) {
+            await Finding.create(f);
+          }
+        }
+
+        // Risk score breakdown
+        let rs = await RiskScore.findOne({ application: primaryApp._id });
+        if (!rs) {
+          await RiskScore.create({
+            application: primaryApp._id,
+            runId: 'RUN-2026-000101-A',
+            totalScore: 82,
+            riskLevel: 'RED',
+            pillarScores: {
+              documentCompleteness: 85,
+              anomalyFlags: 30,
+              sourceVerification: 40,
+              historicalCompliance: 90,
+            },
+            deductions: [
+              { ruleId: 'AREA-CONSIST-001', pillar: 'Physical Infrastructure', points: 30, explanation: '15.3% built-up lab shortfall' },
+              { ruleId: 'FSR-004', pillar: 'Faculty Adequacy', points: 25, explanation: 'FSR 25:1 violates 20:1 ceiling' },
+              { ruleId: 'TER-STATUS-006', pillar: 'Financial Regulatory', points: 15, explanation: 'TER fee unconfirmed in central portal' },
+            ],
           });
         }
-        docMap[key] = doc;
       }
-    }
-    logger.info('Created Documents across applications');
 
-    // ---------------------------------------------------------
-    // 8. Seed Claims & Findings
-    // ---------------------------------------------------------
-    const primaryApp = appMap['APP-2026-000101'];
-    if (primaryApp) {
-      // Claims
-      const claimsData = [
+      // ---------------------------------------------------------
+      // 8b. Seed Faculty Hashes for Duplication Collision Detection
+      // ---------------------------------------------------------
+      const { generateIdentifierHmac } = require('./utils/hmac');
+      const app1 = appMap['APP-2026-000101'];
+      const app3 = appMap['APP-2026-000301'];
+      if (app1 && app3) {
+        const { hmac: hmacSharma } = generateIdentifierHmac('112233445566');
+        const { hmac: hmacVerma } = generateIdentifierHmac('987654321098');
+
+        const facultySeeds = [
+          {
+            application: app1._id,
+            institution: app1.institution,
+            nameNormalized: 'dr. ramesh sharma',
+            identifierType: 'AADHAAR',
+            identifierHmac: hmacSharma,
+            keyVersion: 'v1',
+            isGhostFlagged: false
+          },
+          {
+            application: app1._id,
+            institution: app1.institution,
+            nameNormalized: 'dr. k. s. verma',
+            identifierType: 'AADHAAR',
+            identifierHmac: hmacVerma,
+            keyVersion: 'v1',
+            isGhostFlagged: false
+          },
+          {
+            application: app3._id,
+            institution: app3.institution,
+            nameNormalized: 'dr. k. s. verma',
+            identifierType: 'AADHAAR',
+            identifierHmac: hmacVerma,
+            keyVersion: 'v1',
+            isGhostFlagged: true,
+            matchInstitution: app1.institution,
+            matchApplication: app1._id,
+            matchConfidence: 1.0
+          }
+        ];
+
+        for (const fs of facultySeeds) {
+          const existing = await FacultyHash.findOne({
+            application: fs.application,
+            identifierHmac: fs.identifierHmac
+          });
+          if (!existing) {
+            await FacultyHash.create(fs);
+          }
+        }
+        logger.info('Seeded FacultyHash records with cross-institution collision');
+      }
+
+      // ---------------------------------------------------------
+      // 9. Alerts Queue Across Multiple Severities & Roles
+      // ---------------------------------------------------------
+      const alertDefs = [
         {
-          claimId: 'CLM-000101-01',
-          applicationId: primaryApp._id,
-          subject: 'institution',
-          predicate: 'lab_area_sqm_total',
-          value: 850,
-          unit: 'sqm',
-          confidence: 0.95,
-          origin: 'DOCUMENT',
-          source: { docId: 'D3', page: 2, bbox: [0.1, 0.2, 0.45, 0.35], snippet: 'Total instructional computer laboratory carpet area: 850.00 sq.m', docType: 'SELF_DISCLOSURE_FORM' },
-          method: 'OCR',
+          appNo: 'APP-2026-000101',
+          type: 'INFRASTRUCTURE_MISMATCH',
+          severity: 'HIGH',
+          title: 'Laboratory Area Shortfall Detected',
+          message: 'Discrepancy of 130 sq.m identified in Apex Institute of Technology CSE Lab building plan.',
+          status: 'OPEN',
         },
         {
-          claimId: 'CLM-000101-02',
-          applicationId: primaryApp._id,
-          subject: 'institution',
-          predicate: 'intake_requested',
-          value: 180,
-          unit: 'seats',
-          confidence: 0.98,
-          origin: 'DOCUMENT',
-          source: { docId: 'D1', page: 1, bbox: [0.15, 0.4, 0.5, 0.48], snippet: 'Proposed UG intake for CSE: 180 seats (Increase from 120)', docType: 'SELF_DISCLOSURE_FORM' },
-          method: 'TEXT_LAYER',
+          appNo: 'APP-2026-000101',
+          type: 'FEE_RECONCILIATION',
+          severity: 'HIGH',
+          title: 'TER Processing Fee Unreconciled',
+          message: 'Payment verification failed for application APP-2026-000101 against AICTE central bank ledger.',
+          status: 'OPEN',
         },
         {
-          claimId: 'CLM-000101-03',
-          applicationId: primaryApp._id,
-          subject: 'institution',
-          predicate: 'faculty_count_listed',
-          value: 12,
-          unit: 'faculty',
-          confidence: 0.94,
-          origin: 'DOCUMENT',
-          source: { docId: 'D2', page: 1, bbox: [0.05, 0.1, 0.9, 0.85], snippet: 'Total available approved cadre faculty: 12 members', docType: 'FACULTY_LIST' },
-          method: 'TEXT_LAYER',
+          appNo: 'APP-2026-000301',
+          type: 'FACULTY_DUPLICATION',
+          severity: 'CRITICAL',
+          title: 'Duplicate Faculty PAN/Aadhaar Hash Found',
+          message: 'Dr. K. S. Verma appears simultaneously listed in Chanakya Engineering College and Apex Institute roster.',
+          status: 'OPEN',
         },
         {
-          claimId: 'CLM-000101-04',
-          applicationId: primaryApp._id,
-          subject: 'institution',
-          predicate: 'ter_payment_status_claimed',
-          value: 'PAID',
-          confidence: 0.99,
-          origin: 'DOCUMENT',
-          source: { docId: 'D1', page: 3, bbox: [0.1, 0.7, 0.6, 0.78], snippet: 'TER Processing Fee of Rs 2,50,000 paid via NEFT Ref 88392019', docType: 'SELF_DISCLOSURE_FORM' },
-          method: 'TEXT_LAYER',
+          appNo: 'APP-2026-000201',
+          type: 'FIRE_SAFETY_EXPIRY',
+          severity: 'MEDIUM',
+          title: 'Fire Safety NOC Approaching Expiry',
+          message: 'Bharti Institute Fire NOC expires within 60 days (valid until 2026-11-30). Renewal certificate required.',
+          status: 'OPEN',
+        },
+        {
+          appNo: 'APP-2026-000401',
+          type: 'GEO_COORDINATE_OFFSET',
+          severity: 'LOW',
+          title: 'Campus Perimeter Boundary Minor Offset',
+          message: 'St. Xavier Institute survey coordinates show 4.2m offset from municipal Master Plan satellite baseline.',
+          status: 'ACKNOWLEDGED',
+        },
+        {
+          appNo: 'APP-2026-000501',
+          type: 'COMPLIANCE_MILESTONE',
+          severity: 'INFO',
+          title: 'Annual Regulatory Self-Disclosure Filed',
+          message: 'Sardar Patel College of Pharmacy successfully submitted clean annual EoA continuation disclosure.',
+          status: 'RESOLVED',
         },
       ];
 
-      for (const c of claimsData) {
-        let clm = await Claim.findOne({ claimId: c.claimId });
-        if (!clm) {
-          await Claim.create(c);
+      for (const a of alertDefs) {
+        const app = appMap[a.appNo];
+        if (!app) continue;
+        let alt = await Alert.findOne({ title: a.title, application: app._id });
+        if (!alt) {
+          await Alert.create({
+            application: app._id,
+            applicationId: app._id,
+            type: a.type,
+            severity: a.severity,
+            title: a.title,
+            message: a.message,
+            status: a.status,
+            audience: ['SCRUTINY_OFFICER', 'REGIONAL_DIRECTOR'],
+          });
         }
       }
+      logger.info('Created Alerts Queue');
 
-      // Findings
-      const findingsData = [
-        {
-          findingId: 'FND-000101-01',
-          applicationId: primaryApp._id,
-          ruleId: 'AREA-CONSIST-001',
-          ruleVersion: '1',
-          rulepackVersion: '2026.1-demo',
-          clauseRef: 'AICTE-APH-CH2-05',
-          placeholder: false,
-          status: 'MISMATCH_DETECTED',
-          severity: 'HIGH',
-          state: 'OPEN',
-          title: 'Laboratory Carpet Area Discrepancy',
-          message: 'Laboratory area is 850 sqm in the self-disclosure form but 720 sqm in the architect-sanctioned building plan (difference 15.3%).',
-          claimIds: ['CLM-000101-01'],
-          proof: {
-            statement: 'Computed variance exceeds configured regulatory threshold of 2.0%.',
-            evidence: [
-              {
-                label: 'Self-Disclosure Carpet Area',
-                value: 850,
-                unit: 'sqm',
-                confidence: 0.96,
-                source: { docId: 'D3', page: 2, bbox: [0.1, 0.2, 0.45, 0.35], snippet: 'Total instructional computer laboratory carpet area: 850.00 sq.m', docType: 'SELF_DISCLOSURE_FORM' },
-              },
-              {
-                label: 'Building Plan Carpet Area',
-                value: 720,
-                unit: 'sqm',
-                confidence: 0.99,
-                source: { docId: 'D2', page: 4, bbox: [0.3, 0.5, 0.7, 0.65], snippet: 'Total Lab Area Approved = 720.00 SQM', docType: 'BUILDING_PLAN' },
-              },
-            ],
-            computation: { formula: '|form - plan| / plan * 100', inputs: { form: 850, plan: 720 }, result: '15.3%' },
-          },
-        },
-        {
-          findingId: 'FND-000101-02',
-          applicationId: primaryApp._id,
-          ruleId: 'FSR-004',
-          ruleVersion: '1',
-          rulepackVersion: '2026.1-demo',
-          clauseRef: 'AICTE-APH-CH2-07',
-          placeholder: false,
-          status: 'MISMATCH_DETECTED',
-          severity: 'HIGH',
-          state: 'OPEN',
-          title: 'Faculty Student Ratio (FSR) Shortfall for Proposed Intake',
-          message: 'Requested intake 180 seats over 12 listed faculty gives 25:1 student-to-faculty ratio; maximum allowed is 20:1 under AICTE Chapter II.',
-          claimIds: ['CLM-000101-02', 'CLM-000101-03'],
-          proof: {
-            statement: 'Shortfall of at least 3 approved Assistant Professors in the Department of Computer Science.',
-            evidence: [],
-            computation: { formula: 'intake / faculty <= 20', inputs: { intake: 180, faculty: 12 }, result: '25.0' },
-          },
-        },
-        {
-          findingId: 'FND-000101-03',
-          applicationId: primaryApp._id,
-          ruleId: 'TER-STATUS-006',
-          ruleVersion: '1',
-          rulepackVersion: '2026.1-demo',
-          clauseRef: 'AICTE-APH-CH2-09',
-          placeholder: false,
-          status: 'MISMATCH_DETECTED',
-          severity: 'HIGH',
-          state: 'OPEN',
-          title: 'TER Processing Fee Unconfirmed in Central AICTE Ledger',
-          message: 'Self-disclosure claims fee PAID, but National Portal Bank Reconciliation record reflects PENDING status.',
-          claimIds: ['CLM-000101-04'],
-          proof: {
-            statement: 'Bank transaction reference UTR-88392019 awaiting final clearance from SBI e-Pay gateway.',
-            evidence: [],
-          },
-        },
-      ];
-
-      for (const f of findingsData) {
-        let fnd = await Finding.findOne({ findingId: f.findingId });
-        if (!fnd) {
-          await Finding.create(f);
-        }
-      }
-
-      // Risk score breakdown
-      let rs = await RiskScore.findOne({ application: primaryApp._id });
-      if (!rs) {
-        await RiskScore.create({
-          application: primaryApp._id,
-          runId: 'RUN-2026-000101-A',
-          totalScore: 82,
-          riskLevel: 'RED',
-          pillarScores: {
-            documentCompleteness: 85,
-            anomalyFlags: 30,
-            sourceVerification: 40,
-            historicalCompliance: 90,
-          },
-          deductions: [
-            { ruleId: 'AREA-CONSIST-001', pillar: 'Physical Infrastructure', points: 30, explanation: '15.3% built-up lab shortfall' },
-            { ruleId: 'FSR-004', pillar: 'Faculty Adequacy', points: 25, explanation: 'FSR 25:1 violates 20:1 ceiling' },
-            { ruleId: 'TER-STATUS-006', pillar: 'Financial Regulatory', points: 15, explanation: 'TER fee unconfirmed in central portal' },
-          ],
-        });
-      }
-    }
-
-    // ---------------------------------------------------------
-    // 8b. Seed Faculty Hashes for Duplication Collision Detection
-    // ---------------------------------------------------------
-    const { generateIdentifierHmac } = require('./utils/hmac');
-    const app1 = appMap['APP-2026-000101'];
-    const app3 = appMap['APP-2026-000301'];
-    if (app1 && app3) {
-      const { hmac: hmacSharma } = generateIdentifierHmac('112233445566');
-      const { hmac: hmacVerma } = generateIdentifierHmac('987654321098');
-
-      const facultySeeds = [
-        {
-          application: app1._id,
-          institution: app1.institution,
-          nameNormalized: 'dr. ramesh sharma',
-          identifierType: 'AADHAAR',
-          identifierHmac: hmacSharma,
-          keyVersion: 'v1',
-          isGhostFlagged: false
-        },
-        {
-          application: app1._id,
-          institution: app1.institution,
-          nameNormalized: 'dr. k. s. verma',
-          identifierType: 'AADHAAR',
-          identifierHmac: hmacVerma,
-          keyVersion: 'v1',
-          isGhostFlagged: false
-        },
-        {
-          application: app3._id,
-          institution: app3.institution,
-          nameNormalized: 'dr. k. s. verma',
-          identifierType: 'AADHAAR',
-          identifierHmac: hmacVerma,
-          keyVersion: 'v1',
-          isGhostFlagged: true,
-          matchInstitution: app1.institution,
-          matchApplication: app1._id,
-          matchConfidence: 1.0
-        }
-      ];
-
-      for (const fs of facultySeeds) {
-        const existing = await FacultyHash.findOne({
-          application: fs.application,
-          identifierHmac: fs.identifierHmac
-        });
-        if (!existing) {
-          await FacultyHash.create(fs);
-        }
-      }
-      logger.info('Seeded FacultyHash records with cross-institution collision');
-    }
-
-    // ---------------------------------------------------------
-    // 9. Alerts Queue Across Multiple Severities & Roles
-    // ---------------------------------------------------------
-    const alertDefs = [
-      {
-        appNo: 'APP-2026-000101',
-        type: 'INFRASTRUCTURE_MISMATCH',
-        severity: 'HIGH',
-        title: 'Laboratory Area Shortfall Detected',
-        message: 'Discrepancy of 130 sq.m identified in Apex Institute of Technology CSE Lab building plan.',
-        status: 'OPEN',
-      },
-      {
-        appNo: 'APP-2026-000101',
-        type: 'FEE_RECONCILIATION',
-        severity: 'HIGH',
-        title: 'TER Processing Fee Unreconciled',
-        message: 'Payment verification failed for application APP-2026-000101 against AICTE central bank ledger.',
-        status: 'OPEN',
-      },
-      {
-        appNo: 'APP-2026-000301',
-        type: 'FACULTY_DUPLICATION',
-        severity: 'CRITICAL',
-        title: 'Duplicate Faculty PAN/Aadhaar Hash Found',
-        message: 'Dr. K. S. Verma appears simultaneously listed in Chanakya Engineering College and Apex Institute roster.',
-        status: 'OPEN',
-      },
-      {
-        appNo: 'APP-2026-000201',
-        type: 'FIRE_SAFETY_EXPIRY',
-        severity: 'MEDIUM',
-        title: 'Fire Safety NOC Approaching Expiry',
-        message: 'Bharti Institute Fire NOC expires within 60 days (valid until 2026-11-30). Renewal certificate required.',
-        status: 'OPEN',
-      },
-      {
-        appNo: 'APP-2026-000401',
-        type: 'GEO_COORDINATE_OFFSET',
-        severity: 'LOW',
-        title: 'Campus Perimeter Boundary Minor Offset',
-        message: 'St. Xavier Institute survey coordinates show 4.2m offset from municipal Master Plan satellite baseline.',
-        status: 'ACKNOWLEDGED',
-      },
-      {
-        appNo: 'APP-2026-000501',
-        type: 'COMPLIANCE_MILESTONE',
-        severity: 'INFO',
-        title: 'Annual Regulatory Self-Disclosure Filed',
-        message: 'Sardar Patel College of Pharmacy successfully submitted clean annual EoA continuation disclosure.',
-        status: 'RESOLVED',
-      },
-    ];
-
-    for (const a of alertDefs) {
-      const app = appMap[a.appNo];
-      if (!app) continue;
-      let alt = await Alert.findOne({ title: a.title, application: app._id });
-      if (!alt) {
-        await Alert.create({
-          application: app._id,
-          applicationId: app._id,
-          type: a.type,
-          severity: a.severity,
-          title: a.title,
-          message: a.message,
-          status: a.status,
-          audience: ['SCRUTINY_OFFICER', 'REGIONAL_DIRECTOR'],
-        });
-      }
-    }
-    logger.info('Created Alerts Queue');
-
-    // ---------------------------------------------------------
-    // 10. Deficiency Letters
-    // ---------------------------------------------------------
-    const letterApp = appMap['APP-2026-000301'];
-    if (letterApp) {
-      let letter = await Letter.findOne({ applicationId: letterApp._id });
-      if (!letter) {
-        await Letter.create({
-          applicationId: letterApp._id,
-          findingIds: ['FND-000301-01', 'FND-000301-02'],
-          body: `ALL INDIA COUNCIL FOR TECHNICAL EDUCATION
+      // ---------------------------------------------------------
+      // 10. Deficiency Letters
+      // ---------------------------------------------------------
+      const letterApp = appMap['APP-2026-000301'];
+      if (letterApp) {
+        let letter = await Letter.findOne({ applicationId: letterApp._id });
+        if (!letter) {
+          await Letter.create({
+            applicationId: letterApp._id,
+            findingIds: ['FND-000301-01', 'FND-000301-02'],
+            body: `ALL INDIA COUNCIL FOR TECHNICAL EDUCATION
 Nelson Mandela Marg, Vasant Kunj, New Delhi-110070
 
 DEFICIENCY COMMUNICATED FOR ACADEMIC YEAR 2026-2027
@@ -1076,124 +1078,136 @@ You are requested to rectify these deficiencies and submit your compliance throu
 Yours faithfully,
 Shri V. S. Rao
 Senior Scrutiny Officer, AICTE`,
-          status: 'SENT',
-          createdBy: officer1._id,
-          sentAt: new Date(Date.now() - 4 * 86400000),
-        });
-        logger.info('Created Sent Deficiency Letter for Chanakya Engineering');
+            status: 'SENT',
+            createdBy: officer1._id,
+            sentAt: new Date(Date.now() - 4 * 86400000),
+          });
+          logger.info('Created Sent Deficiency Letter for Chanakya Engineering');
+        }
       }
-    }
 
-    // ---------------------------------------------------------
-    // 11. Source Verification Ledger (VerificationEntry)
-    // ---------------------------------------------------------
-    const verificationEntries = [
-      {
-        appNo: 'APP-2026-000101',
-        checkType: 'ISSUER_LOOKUP',
-        status: 'VERIFIED',
-        source: { label: 'State Fire Service Online Registry', kind: 'LIVE' },
-        requestSummary: 'Query NOC-UP-2024-9988 at CFO Noida Portal',
-        responseSummary: 'Certificate Valid until 2027-01-14. Status: ACTIVE',
-      },
-      {
-        appNo: 'APP-2026-000101',
-        checkType: 'RECORD_MATCH',
-        status: 'MISMATCH_DETECTED',
-        source: { label: 'AICTE National Treasury ERP', kind: 'LIVE' },
-        requestSummary: 'Reconciliation of UTR-88392019 for Rs 2,50,000',
-        responseSummary: 'Payment status returned PENDING by central clearing house',
-      },
-      {
-        appNo: 'APP-2026-000201',
-        checkType: 'QR_DECODE',
-        status: 'VERIFIED',
-        source: { label: 'DigiLocker Regulatory Verification Gateway', kind: 'LIVE' },
-        requestSummary: 'Cryptographic QR verification of NBA Tier-1 Accreditation',
-        responseSummary: 'Digital signature verified with valid NIC Root CA',
-      },
-      {
-        appNo: 'APP-2026-000301',
-        checkType: 'SIGNATURE_CHECK',
-        status: 'MISMATCH_DETECTED',
-        source: { label: 'e-Mudhra DSC Verification API', kind: 'LIVE' },
-        requestSummary: 'Verification of digital signature on Land Title Deed',
-        responseSummary: 'Signing certificate expired on 2024-12-31',
-      },
-    ];
+      // ---------------------------------------------------------
+      // 11. Source Verification Ledger (VerificationEntry)
+      // ---------------------------------------------------------
+      const verificationEntries = [
+        {
+          appNo: 'APP-2026-000101',
+          checkType: 'ISSUER_LOOKUP',
+          status: 'VERIFIED',
+          source: { label: 'State Fire Service Online Registry', kind: 'LIVE' },
+          requestSummary: 'Query NOC-UP-2024-9988 at CFO Noida Portal',
+          responseSummary: 'Certificate Valid until 2027-01-14. Status: ACTIVE',
+        },
+        {
+          appNo: 'APP-2026-000101',
+          checkType: 'RECORD_MATCH',
+          status: 'MISMATCH_DETECTED',
+          source: { label: 'AICTE National Treasury ERP', kind: 'LIVE' },
+          requestSummary: 'Reconciliation of UTR-88392019 for Rs 2,50,000',
+          responseSummary: 'Payment status returned PENDING by central clearing house',
+        },
+        {
+          appNo: 'APP-2026-000201',
+          checkType: 'QR_DECODE',
+          status: 'VERIFIED',
+          source: { label: 'DigiLocker Regulatory Verification Gateway', kind: 'LIVE' },
+          requestSummary: 'Cryptographic QR verification of NBA Tier-1 Accreditation',
+          responseSummary: 'Digital signature verified with valid NIC Root CA',
+        },
+        {
+          appNo: 'APP-2026-000301',
+          checkType: 'SIGNATURE_CHECK',
+          status: 'MISMATCH_DETECTED',
+          source: { label: 'e-Mudhra DSC Verification API', kind: 'LIVE' },
+          requestSummary: 'Verification of digital signature on Land Title Deed',
+          responseSummary: 'Signing certificate expired on 2024-12-31',
+        },
+      ];
 
-    for (const v of verificationEntries) {
-      const app = appMap[v.appNo];
-      if (!app) continue;
-      let entry = await VerificationEntry.findOne({ applicationId: app._id, requestSummary: v.requestSummary });
-      if (!entry) {
-        await VerificationEntry.create({
-          applicationId: app._id,
-          checkType: v.checkType,
-          status: v.status,
-          source: v.source,
-          requestedAt: new Date(Date.now() - 2 * 86400000),
-          respondedAt: new Date(Date.now() - 2 * 86400000 + 3600000),
-          requestSummary: v.requestSummary,
-          responseSummary: v.responseSummary,
+      for (const v of verificationEntries) {
+        const app = appMap[v.appNo];
+        if (!app) continue;
+        let entry = await VerificationEntry.findOne({ applicationId: app._id, requestSummary: v.requestSummary });
+        if (!entry) {
+          await VerificationEntry.create({
+            applicationId: app._id,
+            checkType: v.checkType,
+            status: v.status,
+            source: v.source,
+            requestedAt: new Date(Date.now() - 2 * 86400000),
+            respondedAt: new Date(Date.now() - 2 * 86400000 + 3600000),
+            requestSummary: v.requestSummary,
+            responseSummary: v.responseSummary,
+          });
+        }
+      }
+      logger.info('Created Verification Ledger entries');
+
+      // ---------------------------------------------------------
+      // 12. Cryptographic Audit Trail (AuditEvent & AuditLog)
+      // ---------------------------------------------------------
+      const auditEventsData = [
+        {
+          actor: { id: userMap['admin@onecheck.gov.in']._id.toString(), role: 'ADMIN' },
+          action: 'RULEPACK_ACTIVATED',
+          entity: { type: 'Rulepack', id: '2026.1-demo' },
+          payload: { version: '2026.1-demo', ruleCount: 12 },
+        },
+        {
+          actor: { id: userMap['director@apex-tech.edu.in']._id.toString(), role: 'INSTITUTION_USER' },
+          action: 'APPLICATION_SUBMITTED',
+          entity: { type: 'Application', id: appMap['APP-2026-000101']._id.toString() },
+          payload: { applicationNumber: 'APP-2026-000101', category: 'EOA_INTAKE_INCREASE' },
+        },
+        {
+          actor: { id: officer1._id.toString(), role: 'OFFICER' },
+          action: 'PIPELINE_RUN_COMPLETED',
+          entity: { type: 'CheckRun', id: 'RUN-2026-000101-A' },
+          payload: { findingsCount: 3, riskScore: 82, band: 'RED' },
+        },
+        {
+          actor: { id: officer1._id.toString(), role: 'OFFICER' },
+          action: 'DEFICIENCY_LETTER_DISPATCHED',
+          entity: { type: 'Letter', id: appMap['APP-2026-000301']._id.toString() },
+          payload: { recipient: 'Chanakya Engineering College', noticeDays: 15 },
+        },
+        {
+          actor: { id: userMap['director.regional@onecheck.gov.in']._id.toString(), role: 'REGIONAL_DIRECTOR' },
+          action: 'APPROVAL_DECISION_RECORDED',
+          entity: { type: 'Application', id: appMap['APP-2026-000102']._id.toString() },
+          payload: { outcome: 'APPROVED', validThrough: '2027-06-30' },
+        },
+        {
+          actor: { id: userMap['auditor@onecheck.gov.in']._id.toString(), role: 'AUDITOR' },
+          action: 'AUDIT_INTEGRITY_CHECK',
+          entity: { type: 'AuditChain', id: 'GLOBAL' },
+          payload: { status: 'CHAIN_VALID', verifiedRecords: 10 },
+        },
+      ];
+
+      for (const e of auditEventsData) {
+        await logEvent({
+          actorUser: e.actor.id,
+          action: e.action,
+          entityType: e.entity.type,
+          entityId: e.entity.id,
+          outcome: 'SUCCESS',
+          metadata: e.payload,
         });
       }
+      logger.info('Created Cryptographic Audit Trail');
     }
-    logger.info('Created Verification Ledger entries');
 
     // ---------------------------------------------------------
-    // 12. Cryptographic Audit Trail (AuditEvent & AuditLog)
+    // 13. Network Syndicate Graph Seeding (Feature 1)
     // ---------------------------------------------------------
-    const auditEventsData = [
-      {
-        actor: { id: userMap['admin@onecheck.gov.in']._id.toString(), role: 'ADMIN' },
-        action: 'RULEPACK_ACTIVATED',
-        entity: { type: 'Rulepack', id: '2026.1-demo' },
-        payload: { version: '2026.1-demo', ruleCount: 12 },
-      },
-      {
-        actor: { id: userMap['director@apex-tech.edu.in']._id.toString(), role: 'INSTITUTION_USER' },
-        action: 'APPLICATION_SUBMITTED',
-        entity: { type: 'Application', id: appMap['APP-2026-000101']._id.toString() },
-        payload: { applicationNumber: 'APP-2026-000101', category: 'EOA_INTAKE_INCREASE' },
-      },
-      {
-        actor: { id: officer1._id.toString(), role: 'OFFICER' },
-        action: 'PIPELINE_RUN_COMPLETED',
-        entity: { type: 'CheckRun', id: 'RUN-2026-000101-A' },
-        payload: { findingsCount: 3, riskScore: 82, band: 'RED' },
-      },
-      {
-        actor: { id: officer1._id.toString(), role: 'OFFICER' },
-        action: 'DEFICIENCY_LETTER_DISPATCHED',
-        entity: { type: 'Letter', id: appMap['APP-2026-000301']._id.toString() },
-        payload: { recipient: 'Chanakya Engineering College', noticeDays: 15 },
-      },
-      {
-        actor: { id: userMap['director.regional@onecheck.gov.in']._id.toString(), role: 'REGIONAL_DIRECTOR' },
-        action: 'APPROVAL_DECISION_RECORDED',
-        entity: { type: 'Application', id: appMap['APP-2026-000102']._id.toString() },
-        payload: { outcome: 'APPROVED', validThrough: '2027-06-30' },
-      },
-      {
-        actor: { id: userMap['auditor@onecheck.gov.in']._id.toString(), role: 'AUDITOR' },
-        action: 'AUDIT_INTEGRITY_CHECK',
-        entity: { type: 'AuditChain', id: 'GLOBAL' },
-        payload: { status: 'CHAIN_VALID', verifiedRecords: 10 },
-      },
-    ];
-
-    for (const e of auditEventsData) {
-      await logEvent({
-        actorUser: e.actor.id,
-        action: e.action,
-        entityType: e.entity.type,
-        entityId: e.entity.id,
-        outcome: 'SUCCESS',
-        metadata: e.payload,
-      });
-    }
-    logger.info('Created Cryptographic Audit Trail');
+    try {
+      const { generateSyntheticGraphData, syncToNeo4j } = require('./seeders/syndicate.seeder');
+      const graphData = generateSyntheticGraphData();
+      await syncToNeo4j(graphData);
+      logger.info('Seeded Network Syndicate Graph with planted 5-college cartel');
+    } catch (graphErr) {
+      logger.warn(`Network syndicate seeding note: ${graphErr.message}`);
     }
 
     logger.info('======================================================');

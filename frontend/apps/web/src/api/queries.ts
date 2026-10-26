@@ -850,3 +850,111 @@ export const demoOffsetPayload = (days: number) => ({ clockOffsetDays: days, dec
 
 export const readDemoOffset = (settings: any): number =>
   Number(settings?.clockOffsetDays ?? settings?.decisionDateOffsetDays ?? 0) || 0;
+
+// --- Feature 1: Syndicate & Graph Visualization ---
+
+export const useSyndicateGraph = () =>
+  useQuery({
+    queryKey: ['syndicate', 'graph'],
+    queryFn: async () => {
+      const res = await apiClient.get<any>('/syndicate/graph');
+      return res.data;
+    },
+    staleTime: 30_000,
+  });
+
+export const useSyndicateNodeProof = (nodeId: string | null) =>
+  useQuery({
+    queryKey: ['syndicate', 'node', nodeId],
+    queryFn: async () => {
+      if (!nodeId) return null;
+      const res = await apiClient.get<any>(`/syndicate/node/${encodeURIComponent(nodeId)}`);
+      return res.data?.data;
+    },
+    enabled: !!nodeId,
+  });
+
+export const useReseedSyndicate = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const res = await apiClient.post<any>('/syndicate/seed');
+      return res.data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['syndicate'] }),
+  });
+};
+
+// --- Feature 3: Cryptographic Integrity Audit ---
+
+export interface IntegrityAuditResult {
+  success: boolean;
+  intact: boolean;
+  breachDetected: boolean;
+  status: 'CRYPTOGRAPHIC BREACH' | 'VERIFIED_INTACT';
+  alert: string | null;
+  message: string;
+  summary: {
+    totalApplications: number;
+    verifiedCount: number;
+    tamperedCount: number;
+    autoInitializedCount?: number;
+  };
+  tamperedRecords: Array<{
+    applicationId: string;
+    applicationNumber: string;
+    institutionName?: string;
+    state?: string;
+    status: string;
+    riskScore: number;
+    riskLevel: string;
+    storedHash: string;
+    recalculatedHash: string;
+    previousHash: string;
+    tamperedReason: string;
+  }>;
+  auditedAt: string;
+}
+
+export const useRunIntegrityAudit = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const res = await apiClient.get<IntegrityAuditResult>('/audit/integrity');
+      return res.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['audit'] });
+      qc.invalidateQueries({ queryKey: ['apps'] });
+    },
+  });
+};
+
+export const useSimulateDbaTamper = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload?: { applicationId?: string; riskScore?: number; riskLevel?: string; status?: string }) => {
+      const res = await apiClient.post<any>('/audit/tamper-application', payload || {});
+      return res.data?.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['apps'] });
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+  });
+};
+
+export const useRepairApplication = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (applicationId: string) => {
+      const res = await apiClient.post<any>('/audit/repair-application', { applicationId });
+      return res.data?.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['apps'] });
+      qc.invalidateQueries({ queryKey: ['audit'] });
+    },
+  });
+};
+

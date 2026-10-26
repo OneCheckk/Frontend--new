@@ -1103,4 +1103,257 @@ export const handlers = [
     (archiveInstitutions as any[]).push(inst);
     return HttpResponse.json({ success: true, data: { institution: inst } }, { status: 201 });
   }),
+
+  // --- Feature 1: Syndicate Network MSW Handlers ---
+  ...route('get', '/api/syndicate/graph', () => {
+    // High-fidelity mock syndicate graph mirroring backend seeder
+    const cartelColleges = [
+      { id: 'COL-CARTEL-01', name: 'Apex National Institute of Technology', state: 'Delhi NCR', city: 'Noida', riskScore: 88, riskLevel: 'RED', isCartel: true },
+      { id: 'COL-CARTEL-02', name: 'Paramount College of Engineering & Research', state: 'Maharashtra', city: 'Pune', riskScore: 84, riskLevel: 'RED', isCartel: true },
+      { id: 'COL-CARTEL-03', name: 'Vanguard Institute of Technical Studies', state: 'Karnataka', city: 'Bengaluru', riskScore: 82, riskLevel: 'RED', isCartel: true },
+      { id: 'COL-CARTEL-04', name: 'Horizon Institute of Management & Science', state: 'Tamil Nadu', city: 'Chennai', riskScore: 79, riskLevel: 'RED', isCartel: true },
+      { id: 'COL-CARTEL-05', name: 'Zenith Global Engineering College', state: 'Gujarat', city: 'Ahmedabad', riskScore: 86, riskLevel: 'RED', isCartel: true },
+    ];
+
+    const normalColleges = [
+      { id: 'COL-NORM-01', name: 'St. Xavier Institute of Technology', state: 'Tamil Nadu', city: 'Chennai', riskScore: 18, riskLevel: 'GREEN', isCartel: false },
+      { id: 'COL-NORM-02', name: 'Kalinga Institute of Architecture', state: 'Odisha', city: 'Bhubaneswar', riskScore: 24, riskLevel: 'GREEN', isCartel: false },
+      { id: 'COL-NORM-03', name: 'Sardar Patel College of Pharmacy', state: 'Gujarat', city: 'Ahmedabad', riskScore: 16, riskLevel: 'GREEN', isCartel: false },
+      { id: 'COL-NORM-04', name: 'Chanakya Polytechnic Institute', state: 'Karnataka', city: 'Mysuru', riskScore: 32, riskLevel: 'GREEN', isCartel: false },
+    ];
+
+    const ghostFaculty = [
+      { id: 'FAC-1', name: 'Dr. Ramesh Chandra Sharma', type: 'AADHAAR', hash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855' },
+      { id: 'FAC-2', name: 'Prof. Sunita K. Deshmukh', type: 'PAN', hash: '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8' },
+      { id: 'FAC-3', name: 'Dr. Arvind Kumar Verma', type: 'AADHAAR', hash: '4b227777d4dd1fc61c6f884f48641d02b4d121d3fd328cb08b5531fcacdabf8a' },
+      { id: 'FAC-4', name: 'Prof. Rajeshwari Natarajan', type: 'AADHAAR', hash: 'ef2d127de37b942baad06145e54b0c619a1f22327b2ebbcfbec78f5564afe39d' },
+      { id: 'FAC-5', name: 'Dr. Vikramaditya Rathore', type: 'PAN', hash: '8f434346648f6b96df89dda901c5176b10a6d83961dd3c1ac88b59b2dc327aa4' },
+    ];
+
+    const elements: any[] = [];
+
+    // College Nodes (Large Blue)
+    [...cartelColleges, ...normalColleges].forEach((c) => {
+      elements.push({
+        data: {
+          id: c.id,
+          label: c.name.replace(/ Institute.*| College.*| Academy.*/, '').trim(),
+          fullName: c.name,
+          nodeType: 'college',
+          color: c.isCartel ? '#2563eb' : '#3b82f6',
+          size: c.isCartel ? 55 : 44,
+          state: c.state,
+          city: c.city,
+          riskScore: c.riskScore,
+          riskLevel: c.riskLevel,
+          isCartelMember: c.isCartel,
+        },
+      });
+    });
+
+    // Faculty Nodes (Small Red)
+    ghostFaculty.forEach((f) => {
+      elements.push({
+        data: {
+          id: f.id,
+          label: `${f.name.split(' ')[0]} (${f.type})`,
+          fullName: f.name,
+          nodeType: 'faculty',
+          hash: f.hash,
+          shortHash: `${f.hash.slice(0, 8)}…`,
+          identifierType: f.type,
+          color: '#ef4444',
+          size: 26,
+          isGhost: true,
+        },
+      });
+    });
+
+    // Severity Edges (Thickness = Severity)
+    const severityPairs = [
+      ['COL-CARTEL-01', 'COL-CARTEL-02', 4, 8, '#b91c1c'],
+      ['COL-CARTEL-02', 'COL-CARTEL-03', 3, 6, '#ea580c'],
+      ['COL-CARTEL-03', 'COL-CARTEL-04', 4, 8, '#b91c1c'],
+      ['COL-CARTEL-04', 'COL-CARTEL-05', 3, 6, '#ea580c'],
+      ['COL-CARTEL-05', 'COL-CARTEL-01', 5, 10, '#b91c1c'],
+    ];
+
+    severityPairs.forEach(([src, tgt, count, width, color]) => {
+      elements.push({
+        data: {
+          id: `EDGE-${src}-${tgt}`,
+          source: src,
+          target: tgt,
+          edgeType: 'shared_severity',
+          severityCount: count,
+          width,
+          lineColor: color,
+        },
+      });
+    });
+
+    // Connect some ghost faculty to colleges
+    ghostFaculty.forEach((f, idx) => {
+      elements.push({
+        data: {
+          id: `EMP-${f.id}-1`,
+          source: cartelColleges[idx % cartelColleges.length].id,
+          target: f.id,
+          edgeType: 'employs',
+        },
+      });
+      elements.push({
+        data: {
+          id: `EMP-${f.id}-2`,
+          source: cartelColleges[(idx + 1) % cartelColleges.length].id,
+          target: f.id,
+          edgeType: 'employs',
+        },
+      });
+    });
+
+    return HttpResponse.json({
+      success: true,
+      graph: {
+        elements,
+        nodesCount: elements.filter((e) => !e.data.source).length,
+        edgesCount: elements.filter((e) => !!e.data.source).length,
+      },
+      cartel: {
+        cartelId: 'CARTEL-RING-ALPHA',
+        name: '5-College High-Risk Faculty Sharing Syndicate',
+        colleges: cartelColleges,
+        size: 5,
+        totalSharedGhostFaculty: 10,
+        riskScoreAvg: 85,
+        riskLevel: 'CRITICAL',
+        description: 'Autonomous graph detection identified a closed 5-node cycle sharing 10 identical faculty HMAC hashes across 5 states, violating AICTE section 2.4 accreditation standards.',
+      },
+      cypherQueries: {
+        detectMultiHop: 'MATCH path = (start:College)-[:SHARES_FACULTY*2..4]->(target:College)\nWHERE start.id <> target.id\nRETURN path, length(path) AS hops',
+        detectCycles: 'MATCH cyclePath = (c:College)-[r:SHARES_FACULTY*3..6]->(c)\nRETURN cyclePath',
+        aggregateSeverity: 'MATCH (c1:College)-[r:SHARES_FACULTY]-(c2:College)\nRETURN c1, c2, count(r) AS severityWeight',
+      },
+    });
+  }),
+
+  ...route('get', '/api/syndicate/node/:id', ({ params }) => {
+    const { id } = params as { id: string };
+    if (id.startsWith('COL')) {
+      return HttpResponse.json({
+        success: true,
+        data: {
+          type: 'college',
+          id,
+          name: id.includes('01') ? 'Apex National Institute of Technology' : 'Paramount College of Engineering & Research',
+          registrationId: `AICTE-${id}`,
+          state: 'Delhi NCR',
+          city: 'Noida',
+          riskScore: 88,
+          riskLevel: 'RED',
+          isCartelMember: true,
+          facultyCount: 14,
+          sharedFacultyCount: 6,
+          facultyList: [
+            { id: 'FAC-1', name: 'Dr. Ramesh Chandra Sharma', department: 'Computer Science', identifierType: 'AADHAAR', hash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', isGhost: true },
+            { id: 'FAC-2', name: 'Prof. Sunita K. Deshmukh', department: 'Information Technology', identifierType: 'PAN', hash: '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8', isGhost: true },
+          ],
+          colludingInstitutions: [
+            { id: 'COL-CARTEL-02', name: 'Paramount College of Engineering & Research', state: 'Maharashtra', riskScore: 84 },
+            { id: 'COL-CARTEL-03', name: 'Vanguard Institute of Technical Studies', state: 'Karnataka', riskScore: 82 },
+          ],
+          definitiveProof: {
+            statement: 'Definitive multi-hop graph proof: Participates in a closed 5-node cartel syndicate sharing 6 ghost faculty across 4 institutions.',
+            recommendedAction: 'IMMEDIATE_EVC_INSPECTION_AND_HOLD',
+          },
+        },
+      });
+    }
+
+    return HttpResponse.json({
+      success: true,
+      data: {
+        type: 'faculty',
+        id,
+        hash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+        name: 'Dr. Ramesh Chandra Sharma',
+        identifierType: 'AADHAAR',
+        department: 'Computer Science',
+        isGhost: true,
+        associatedColleges: [
+          { id: 'COL-CARTEL-01', name: 'Apex National Institute of Technology', state: 'Delhi NCR', riskScore: 88 },
+          { id: 'COL-CARTEL-02', name: 'Paramount College of Engineering & Research', state: 'Maharashtra', riskScore: 84 },
+        ],
+        definitiveProof: {
+          statement: 'Duplication collision proof: Identifier AADHAAR hash appears simultaneously on active regulatory rosters of 2 distinct institutions.',
+          collisionDetected: true,
+        },
+      },
+    });
+  }),
+
+  ...route('post', '/api/syndicate/seed', () => HttpResponse.json({ success: true, message: 'Re-seeded successfully' })),
+
+  // --- Feature 3: Cryptographic Integrity Audit MSW Handlers ---
+  ...route('get', '/api/audit/integrity', () => {
+    // Check if simulated tamper is active
+    if ((globalThis as any).__mockBreachActive) {
+      return HttpResponse.json({
+        success: true,
+        intact: false,
+        breachDetected: true,
+        status: 'CRYPTOGRAPHIC BREACH',
+        alert: 'CRYPTOGRAPHIC BREACH',
+        message: 'CRYPTOGRAPHIC BREACH DETECTED: 1 application record has an invalid cryptographic signature. Direct database modification detected.',
+        summary: {
+          totalApplications: 10,
+          verifiedCount: 9,
+          tamperedCount: 1,
+        },
+        tamperedRecords: [
+          {
+            applicationId: 'app-tampered-001',
+            applicationNumber: 'APP-2026-000101',
+            institutionName: 'Apex National Institute of Technology',
+            state: 'Uttar Pradesh',
+            status: 'APPROVED',
+            riskScore: 95,
+            riskLevel: 'GREEN',
+            storedHash: '8f434346648f6b96df89dda901c5176b10a6d83961dd3c1ac88b59b2dc327aa4',
+            recalculatedHash: 'c7b508f7f2b184a56c07df74d9e262c5e52d67d71b3e85e135118f90a9829f27',
+            previousHash: '0000000000000000000000000000000000000000000000000000000000000000',
+            tamperedReason: 'Stored cryptographic hash does not match computed signature. Row was directly manipulated in database storage bypassing the Node.js API layer (DBA bypass attack).',
+          },
+        ],
+        auditedAt: new Date().toISOString(),
+      });
+    }
+
+    return HttpResponse.json({
+      success: true,
+      intact: true,
+      breachDetected: false,
+      status: 'VERIFIED_INTACT',
+      alert: null,
+      message: 'Integrity Audit passed successfully. All 10 application records match their immutable cryptographic signatures.',
+      summary: {
+        totalApplications: 10,
+        verifiedCount: 10,
+        tamperedCount: 0,
+      },
+      tamperedRecords: [],
+      auditedAt: new Date().toISOString(),
+    });
+  }),
+
+  ...route('post', '/api/audit/tamper-application', () => {
+    (globalThis as any).__mockBreachActive = true;
+    return HttpResponse.json({ success: true, message: 'DBA bypass executed' });
+  }),
+
+  ...route('post', '/api/audit/repair-application', () => {
+    (globalThis as any).__mockBreachActive = false;
+    return HttpResponse.json({ success: true, message: 'Application repaired and re-signed' });
+  }),
 ];
+

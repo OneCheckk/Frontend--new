@@ -1,4 +1,6 @@
 const mongoose = require('mongoose');
+const crypto = require('crypto');
+const env = require('../config/env');
 
 const applicationSchema = new mongoose.Schema(
   {
@@ -151,6 +153,18 @@ const applicationSchema = new mongoose.Schema(
     currentRunId: {
       type: String,
       default: null
+    },
+    previousHash: {
+      type: String,
+      default: '0000000000000000000000000000000000000000000000000000000000000000'
+    },
+    currentHash: {
+      type: String,
+      default: null
+    },
+    ledgerUpdatedAt: {
+      type: Date,
+      default: null
     }
   },
   {
@@ -163,6 +177,55 @@ const applicationSchema = new mongoose.Schema(
     }
   }
 );
+
+// Cryptographic Ledger Methods
+applicationSchema.methods.calculateExpectedHash = function (secretSalt = env.SECRET_SERVER_SALT) {
+  const appId = (this.applicationNumber || this._id).toString();
+  const riskScore = this.riskScore !== null && this.riskScore !== undefined ? String(this.riskScore) : '0';
+  const riskLevel = this.riskLevel || 'NONE';
+  const status = this.status || 'DRAFT';
+  const prevHash = this.previousHash || '0000000000000000000000000000000000000000000000000000000000000000';
+  const payload = `${appId}${riskScore}${riskLevel}${status}${prevHash}${secretSalt}`;
+  return crypto.createHash('sha256').update(payload).digest('hex');
+};
+
+applicationSchema.statics.calculateHashForData = function ({
+  applicationId,
+  riskScore,
+  riskLevel,
+  status,
+  previousHash,
+  secretSalt = env.SECRET_SERVER_SALT
+}) {
+  const appId = (applicationId || '').toString();
+  const score = riskScore !== null && riskScore !== undefined ? String(riskScore) : '0';
+  const level = riskLevel || 'NONE';
+  const st = status || 'DRAFT';
+  const prev = previousHash || '0000000000000000000000000000000000000000000000000000000000000000';
+  const payload = `${appId}${score}${level}${st}${prev}${secretSalt}`;
+  return crypto.createHash('sha256').update(payload).digest('hex');
+};
+
+// Mongoose Pre-Save Middleware: acts as the cryptographic ledger logic
+applicationSchema.pre('save', function (next) {
+  try {
+    const genesisHash = '0000000000000000000000000000000000000000000000000000000000000000';
+    if (this.isNew) {
+      if (!this.previousHash) {
+        this.previousHash = genesisHash;
+      }
+    } else {
+      // Move old hash to previousHash
+      this.previousHash = this.currentHash || this.previousHash || genesisHash;
+    }
+
+    this.currentHash = this.calculateExpectedHash();
+    this.ledgerUpdatedAt = new Date();
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
 
 // Compound and single query indexes
 applicationSchema.index({ status: 1 });

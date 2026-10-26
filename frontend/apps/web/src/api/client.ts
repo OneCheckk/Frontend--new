@@ -54,8 +54,18 @@ const generateRequestId = () => {
   return 'req-' + Math.random().toString(36).substring(2, 9) + '-' + Date.now();
 };
 
+export const resolveApiBase = () => {
+  const envUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE;
+  if (!envUrl) return '/api';
+  if (envUrl === '/api' || envUrl.endsWith('/api') || envUrl.endsWith('/api/')) {
+    return envUrl;
+  }
+  return `${envUrl.replace(/\/+$/, '')}/api`;
+};
+
 export const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE || '/api',
+  baseURL: resolveApiBase(),
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },

@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { fetchEventSource } from '@microsoft/fetch-event-source';
-import { getStoredToken } from './client';
+import { getStoredToken, resolveApiBase } from './client';
 
 export type SSEConnectionState = 'connected' | 'reconnecting' | 'polling' | 'disconnected';
 
@@ -39,7 +39,7 @@ export const useSSE = (options?: SSEOptions) => {
     }
 
     controllerRef.current = new AbortController();
-    const url = `${import.meta.env.VITE_API_BASE || '/api'}/events`;
+    const url = `${resolveApiBase()}/events`;
 
     fetchEventSource(url, {
       method: 'GET',

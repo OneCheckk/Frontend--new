@@ -89,8 +89,47 @@ async function tamperAudit(req, res, next) {
   }
 }
 
+const integrityAuditService = require('../services/integrityAudit.service');
+
+async function runIntegrityAudit(req, res, next) {
+  try {
+    const result = await integrityAuditService.runIntegrityAudit();
+    res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function simulateDbaTamper(req, res, next) {
+  try {
+    const result = await integrityAuditService.simulateDbaTamper(req.body.applicationId, req.body);
+    res.status(200).json({
+      success: true,
+      data: result
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function repairApplication(req, res, next) {
+  try {
+    const result = await integrityAuditService.repairApplication(req.body.applicationId);
+    res.status(200).json({
+      success: true,
+      data: result
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   getAuditEvents,
   verifyChain,
-  tamperAudit
+  tamperAudit,
+  runIntegrityAudit,
+  simulateDbaTamper,
+  repairApplication
 };
+

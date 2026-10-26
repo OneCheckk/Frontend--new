@@ -21,6 +21,38 @@ router.get(
   auditController.getAuditEvents
 );
 
+// GET /api/audit/integrity (Bureau Directors / REGIONAL_DIRECTOR / OFFICER / AUDITOR / ADMIN)
+router.get(
+  '/integrity',
+  authenticate,
+  authorize('OFFICER', 'SCRUTINY_OFFICER', 'REGIONAL_DIRECTOR', 'AUDITOR', 'ADMIN'),
+  auditController.runIntegrityAudit
+);
+
+// POST /api/audit/integrity
+router.post(
+  '/integrity',
+  authenticate,
+  authorize('OFFICER', 'SCRUTINY_OFFICER', 'REGIONAL_DIRECTOR', 'AUDITOR', 'ADMIN'),
+  auditController.runIntegrityAudit
+);
+
+// POST /api/audit/tamper-application (Simulate direct DBA database bypass)
+router.post(
+  '/tamper-application',
+  authenticate,
+  authorize('OFFICER', 'SCRUTINY_OFFICER', 'REGIONAL_DIRECTOR', 'AUDITOR', 'ADMIN'),
+  auditController.simulateDbaTamper
+);
+
+// POST /api/audit/repair-application (Re-sign application with valid cryptographic signature)
+router.post(
+  '/repair-application',
+  authenticate,
+  authorize('OFFICER', 'SCRUTINY_OFFICER', 'REGIONAL_DIRECTOR', 'AUDITOR', 'ADMIN'),
+  auditController.repairApplication
+);
+
 // POST /api/audit/tamper (DEV / DEMO MODE ONLY)
 router.post(
   '/tamper',

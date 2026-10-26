@@ -13,21 +13,10 @@ const app = express();
 app.use(helmet());
 
 // CORS configuration
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (such as mobile apps or curl)
-      if (!origin) return callback(null, true);
-      if (env.ALLOWED_ORIGINS.includes('*') || env.ALLOWED_ORIGINS.includes(origin)) {
-        return callback(null, true);
-      }
-      return callback(new Error(`Origin '${origin}' not allowed by CORS policy`));
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-Id']
-  })
-);
+app.use(cors({
+    origin: 'http://localhost:5174',
+    credentials: true
+}));
 
 // Standard JSON and URL-encoded body parsers
 app.use(express.json({ limit: '10mb' }));

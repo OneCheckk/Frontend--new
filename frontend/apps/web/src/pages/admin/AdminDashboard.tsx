@@ -1,9 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { Network } from 'lucide-react';
 import { useDashboardSummary, useHealth } from '../../api/queries';
-import { ErrorState, PageHeader, PageSkeleton, Panel, StatStrip, DataTable, Notice } from '../../components/ui';
+import { ErrorState, PageHeader, PageSkeleton, Panel, StatStrip, DataTable, Notice, Button } from '../../components/ui';
 import { ApplicationStatusBadge, BandChip, CheckRunBadge, DemoBanner, SeverityChip } from '../../components/status';
 import { APPLICATION_STATUS } from '../../components/status/statusMaps';
+import { IntegrityAuditControl } from '../../components/audit/IntegrityAuditControl';
 import type { Band, Severity } from '@contracts';
 
 const fmt = (iso?: string) => (iso ? new Date(iso).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : '—');
@@ -25,8 +27,19 @@ export const AdminDashboardPage: React.FC = () => {
         title="Administration overview"
         description="Platform-wide figures aggregated by the server, with shortcuts to management pages."
         breadcrumbs={[{ label: 'Administration' }, { label: 'Overview' }]}
+        actions={
+          <Link
+            to="/syndicate"
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-indigo-700 bg-indigo-700 px-3.5 text-xs font-bold text-white shadow-xs hover:bg-indigo-800 transition"
+          >
+            <Network className="h-4 w-4" /> Syndicate Network Web
+          </Link>
+        }
       />
       <DemoBanner className="mb-4" />
+
+      {/* Feature 3: Bureau Director Integrity Audit Control & Breach Alert */}
+      <IntegrityAuditControl className="mb-5" />
 
       {summary.isError ? (
         <ErrorState error={summary.error} title="Overview figures could not be loaded" onRetry={() => summary.refetch()} />
@@ -113,6 +126,7 @@ export const AdminDashboardPage: React.FC = () => {
                 ['/admin/users', 'Users', 'Accounts, roles and activation'],
                 ['/admin/checklists', 'Checklists', 'Required documents per category'],
                 ['/admin/rulepacks', 'Rulepacks', 'Versioned verification rules'],
+                ['/syndicate', 'Syndicate Network', 'Interactive Graph DB fraud web'],
                 ['/audit', 'Audit trail', 'Logged actions and chain verification'],
                 ['/benchmark', 'Benchmark', 'Synthetic evaluation runs'],
               ].map(([to, t, desc]) => (

@@ -42,6 +42,9 @@ const { authorize } = require('../middleware/authorize');
 
 router.use('/audit', auditRoutes);
 
+const syndicateRoutes = require('./syndicate.routes');
+router.use('/syndicate', syndicateRoutes);
+
 const demoRoutes = require('./demo.routes');
 const { subscribe } = require('../services/sse.service');
 

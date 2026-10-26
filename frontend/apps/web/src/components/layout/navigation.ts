@@ -9,6 +9,7 @@ import {
   Users,
   ListChecks,
   FileCode2,
+  Network,
   type LucideIcon,
 } from 'lucide-react';
 import type { UserRole } from '@contracts';
@@ -50,6 +51,7 @@ export const NAV_ITEMS: NavItem[] = [
   { to: '/admin/rulepacks', label: 'Rulepacks', icon: FileCode2, roles: ROUTE_ROLES.admin },
 
   // Oversight
+  { to: '/syndicate', label: 'Syndicate Network', icon: Network, roles: ROUTE_ROLES.syndicate },
   { to: '/audit', label: 'Audit trail', icon: ShieldCheck, roles: ROUTE_ROLES.audit },
   { to: '/benchmark', label: 'Benchmark', icon: BarChart3, roles: ROUTE_ROLES.benchmark },
 ];

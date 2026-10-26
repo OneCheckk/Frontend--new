@@ -1,8 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Network } from 'lucide-react';
 import { useApplicationsPage, useOfficerDashboard } from '../../api/queries';
 import type { ApplicationView } from '../../api/adapters';
+import { IntegrityAuditControl } from '../../components/audit/IntegrityAuditControl';
 import {
   DataTable,
   ErrorState,
@@ -98,13 +99,24 @@ export const OfficerQueuePage: React.FC = () => {
   };
 
   return (
-    <div className="page py-6">
+    <div className="page py-6 space-y-4">
       <PageHeader
         title="Scrutiny review queue"
         description="Applications accessible to you for scrutiny. Open a case to inspect findings and cited evidence."
         breadcrumbs={[{ label: 'Scrutiny' }, { label: 'Review queue' }]}
+        actions={
+          <Link
+            to="/syndicate"
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-indigo-700 bg-indigo-700 px-3.5 text-xs font-bold text-white shadow-xs hover:bg-indigo-800 transition"
+          >
+            <Network className="h-4 w-4" /> Syndicate Network Web
+          </Link>
+        }
       />
-      <DemoBanner className="mb-4" />
+      <DemoBanner />
+
+      {/* Feature 3: Bureau Director Integrity Audit Control & Breach Alert */}
+      <IntegrityAuditControl />
 
       {dashboard.isError ? (
         <Notice tone="warn" className="mb-4" title="Queue summary unavailable">

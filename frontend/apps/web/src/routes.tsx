@@ -29,6 +29,7 @@ import { AdminRulepacksPage } from './pages/admin/Rulepacks';
 import { AdminChecklistsPage, AdminUsersPage } from './pages/admin/AdminManage';
 import { AuditPage } from './pages/audit/Audit';
 import { BenchmarkPage } from './pages/benchmark/Benchmark';
+import { NetworkSyndicatePage } from './pages/syndicate/NetworkSyndicatePage';
 
 const NotFound: React.FC = () => (
   <div className="page py-12">
@@ -153,6 +154,16 @@ export const AppRoutes: React.FC = () => {
           element={
             <RequireRole roles={[...ROUTE_ROLES.admin]}>
               <AdminUsersPage />
+            </RequireRole>
+          }
+        />
+
+        {/* Network Syndicate Visualization (Feature 1) */}
+        <Route
+          path="/syndicate"
+          element={
+            <RequireRole roles={[...ROUTE_ROLES.syndicate]}>
+              <NetworkSyndicatePage />
             </RequireRole>
           }
         />
