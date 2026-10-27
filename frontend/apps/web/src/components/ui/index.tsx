@@ -185,7 +185,6 @@ export const PageBreadcrumbs: React.FC<{ items: BreadcrumbItem[]; className?: st
     </ol>
   </nav>
 );
-
 // ==========================================
 // 4. Page header
 // ==========================================
